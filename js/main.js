@@ -296,27 +296,22 @@ function computeSectionGroups() {
 }
 
 function makeIsNodeUnlocked() {
-    const completedQuizzes = new Set(JSON.parse(localStorage.getItem('quarks_quizzes') || '[]'));
     const groups = computeSectionGroups();
-    const sectionBySIdx = new Map();
-    groups.forEach((sec, secIdx) => sec.stages.forEach(({ sIdx }) => sectionBySIdx.set(sIdx, secIdx)));
+
+    // First level of each section's first stage is always open
+    const sectionEntries = new Set(groups.map(sec => `${sec.stages[0].sIdx}-0`));
 
     const allNodes = [];
     STAGES.forEach((stage, sIdx) => stage.levels.forEach((_, lIdx) => allNodes.push({ sIdx, lIdx })));
     const map = new Map(allNodes.map(({ sIdx, lIdx }, i) => [`${sIdx}-${lIdx}`, i]));
 
     return (sIdx, lIdx) => {
+        if (sectionEntries.has(`${sIdx}-${lIdx}`)) return true;
         const i = map.get(`${sIdx}-${lIdx}`);
         if (i === undefined) return false;
-        if (i === 0) return true;
         const prev = allNodes[i - 1];
-        if (!completedStages.includes(`${prev.sIdx}-${prev.lIdx}`)) return false;
-        // Cross-section transition: all quizzes of the previous section must be done
-        if (sectionBySIdx.get(prev.sIdx) !== sectionBySIdx.get(sIdx)) {
-            const prevSec = groups[sectionBySIdx.get(prev.sIdx)];
-            if (!prevSec.stages.every(({ sIdx: s }) => completedQuizzes.has(s))) return false;
-        }
-        return true;
+        // Only requires the immediately preceding level to be completed — no cross-section gates
+        return completedStages.includes(`${prev.sIdx}-${prev.lIdx}`);
     };
 }
 
