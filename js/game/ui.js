@@ -1,4 +1,4 @@
-import { drawBlochSphere, calcBlochVector } from '../quantum/bloch.js';
+import { drawBlochSphere, calcBlochVector, clearBlochRotations } from '../quantum/bloch.js';
 import { stateToString, computeStateVector } from '../quantum/engine.js';
 import { GATE_MATRICES, getOccupiedQubits } from '../quantum/gates.js';
 import { ACHIEVEMENTS, LEARN_CATEGORIES, PLAY_CATEGORIES } from '../data/achievements.js';
@@ -223,6 +223,7 @@ export function getColumnHTML(gates, numQubits, gateStatusMap = null) {
 const BLOCH_TIP = 'Bloch sphere: maps a qubit\'s state in 3D.\nTop = |0⟩ · Bottom = |1⟩ · Equator = superposition';
 
 export function renderDynamicCanvases(numQubits) {
+    clearBlochRotations();
     const wrap = document.getElementById('canvas-wrapper');
     wrap.innerHTML = '';
     for(let q=0; q<numQubits; q++){

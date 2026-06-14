@@ -1,6 +1,7 @@
 import { computeStateVector, stateToString } from '../quantum/engine.js';
 import { GATE_MATRICES } from '../quantum/gates.js';
 import { updateBlochSpheres, updateTargetBlochSphere, parseMarkdownAndMath, fireQuantumConfetti } from './ui.js';
+import { drawBlochSphereDual, initBlochTrackball } from '../quantum/bloch.js';
 
 // X gates needed to encode |n⟩ for 3 qubits: qubit 0 = MSB (weight 4), qubit 2 = LSB (weight 1)
 export const QFT_LAB_CONFIGS = {
@@ -177,45 +178,6 @@ export function showBlochExplorerLab() {
         return Math.max(0, (1 + cur.x * tgt.x + cur.y * tgt.y + cur.z * tgt.z) / 2);
     }
 
-    function drawDualSphere(canvasId, cur, tgt) {
-        const canvas = document.getElementById(canvasId);
-        if (!canvas) return;
-        const ctx = canvas.getContext('2d');
-        const w = canvas.width, h = canvas.height;
-        ctx.clearRect(0, 0, w, h);
-
-        const cx = w / 2, cy = h / 2 - 8, R = Math.min(w, h) / 2 - 18;
-
-        // Sphere outline
-        ctx.beginPath(); ctx.arc(cx, cy, R, 0, 2 * Math.PI);
-        ctx.strokeStyle = 'rgba(255,255,255,0.2)'; ctx.lineWidth = 1; ctx.stroke();
-        ctx.beginPath(); ctx.ellipse(cx, cy, R, R * 0.35, 0, 0, 2 * Math.PI); ctx.stroke();
-
-        const proj = (x, y, z) => ({ px: cx + R * (y - 0.5 * x), py: cy + R * (-z + 0.35 * x) });
-
-        // Axes
-        ctx.strokeStyle = 'rgba(255,255,255,0.12)'; ctx.lineWidth = 1;
-        const axis = (p1, p2) => { ctx.beginPath(); ctx.moveTo(p1.px, p1.py); ctx.lineTo(p2.px, p2.py); ctx.stroke(); };
-        axis(proj(0,0,-1), proj(0,0,1)); axis(proj(0,-1,0), proj(0,1,0)); axis(proj(-1,0,0), proj(1,0,0));
-        ctx.fillStyle = 'rgba(255,255,255,0.4)'; ctx.font = '10px sans-serif';
-        const p0 = proj(0,0,1);  ctx.fillText('|0⟩', p0.px - 6, p0.py - 4);
-        const p1 = proj(0,0,-1); ctx.fillText('|1⟩', p1.px - 6, p1.py + 12);
-
-        // Target vector (teal)
-        const pt = proj(tgt.x, tgt.y, tgt.z);
-        ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(pt.px, pt.py);
-        ctx.strokeStyle = '#2dd4bf'; ctx.lineWidth = 2.5; ctx.stroke();
-        ctx.beginPath(); ctx.arc(pt.px, pt.py, 5, 0, 2 * Math.PI);
-        ctx.fillStyle = '#2dd4bf'; ctx.fill();
-
-        // Current vector (pink)
-        const pc = proj(cur.x, cur.y, cur.z);
-        ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(pc.px, pc.py);
-        ctx.strokeStyle = '#ec4899'; ctx.lineWidth = 3; ctx.stroke();
-        ctx.beginPath(); ctx.arc(pc.px, pc.py, 5, 0, 2 * Math.PI);
-        ctx.fillStyle = '#ec4899'; ctx.fill();
-    }
-
     let target = randomTarget();
     let thetaVal = 0, phiVal = 0;
     let celebrating = false;
@@ -225,7 +187,7 @@ export function showBlochExplorerLab() {
         const fid = fidelity(cur, target.bloch);
         const pct = Math.round(fid * 100);
 
-        drawDualSphere('bloch-explorer-canvas', cur, target.bloch);
+        drawBlochSphereDual('bloch-explorer-canvas', cur, target.bloch);
 
         const bar = document.getElementById('bloch-exp-bar');
         const val = document.getElementById('bloch-exp-fid');
@@ -289,6 +251,8 @@ export function showBlochExplorerLab() {
         </div>
         <div id="bloch-exp-status" style="font-size:0.85rem;font-weight:600;text-align:center;min-height:1.2em;"></div>
     `;
+
+    initBlochTrackball('bloch-explorer-canvas', () => render(false));
 
     document.getElementById('var-exp-theta').addEventListener('input', e => {
         thetaVal = parseFloat(e.target.value);

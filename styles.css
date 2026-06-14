@@ -687,6 +687,8 @@ body:has(#menu-home:not(.hidden)) {
 }
 .tt:hover::after { opacity: 1; }
 .bloch-wrap { display: inline-block; }
+canvas.bloch-trackball { cursor: grab; }
+canvas.bloch-trackball.dragging { cursor: grabbing; }
 
 /* --- Tutorial & Ghost Hand Animations --- */
 .tutorial-overlay {
