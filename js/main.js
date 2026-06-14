@@ -1522,7 +1522,7 @@ window.runVariationalOptimizer = function() {
     const lr0 = 0.25;
     let step = 0;
     const maxSteps = 80;
-    const sign = (vspec.higherIsBetter || vspec.winMode === 'prob') ? -1 : 1;
+    const sign = (vspec.higherIsBetter || vspec.winMode === 'prob' || vspec.winMode === 'fidelity') ? -1 : 1;
 
     _varOptimizerTimer = setInterval(() => {
         if (state.gameOver || step >= maxSteps) { _stopOptimizer(); return; }
