@@ -892,6 +892,7 @@ export const STAGES = [
                     higherIsBetter: false,
                     showLandscape: false,
                     showOptimizer: true,
+                    optimizerInterval: 350,
                     costLabel: '⟨H⟩',
                     task: "This Hamiltonian has a broken symmetry: H = −ZZ − 0.5·XX + 0.3·Z₀ − 0.3·Z₁. The single-layer ansatz can't always find the ground state — but the deeper two-layer ansatz can. Click **Run Optimizer** and watch VQE converge.",
                 },

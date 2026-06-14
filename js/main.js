@@ -1550,7 +1550,7 @@ window.runVariationalOptimizer = function() {
         });
 
         recomputeVariational();
-    }, 80);
+    }, vspec.optimizerInterval ?? 80);
 };
 
 // ── Auth UI ───────────────────────────────────────────────────────────────
