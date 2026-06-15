@@ -957,8 +957,8 @@ export const STAGES = [
                 variational: {
                     numQubits: 2,
                     params: [
-                        { id: 'gamma', label: 'γ (phase)', min: 0, max: 3.14159, init: 0.5 },
-                        { id: 'beta',  label: 'β (mixer)', min: 0, max: 1.5708,  init: 0.4 }
+                        { id: 'gamma', label: 'γ (phase)', min: 0, max: 3.14159, init: 1.0 },
+                        { id: 'beta',  label: 'β (mixer)', min: 0, max: 3.14159, init: 2.0 }
                     ],
                     template: [
                         ['H0', 'H1'],
@@ -976,8 +976,8 @@ export const STAGES = [
                     costLabel: 'P(cut)',
                     task: "The full QAOA p=1 circuit: H⊗H → Phase_Sep(γ) → Mixer(β). The mixer RX(β) converts phase differences into measurable amplitude differences. Tune γ and β (or run the optimizer) to push P(|01⟩)+P(|10⟩) above 90%.",
                 },
-                lesson: "**The mixer** drives transitions between bit-strings, converting phase differences into amplitude differences.\n\nThe standard QAOA mixer is:\nU_B(β) = exp(−iβ Σ_i X_i) = ⊗_i RX(2β)\n\nWe apply RX(β) independently on each qubit. RX works because it rotates around the X-axis, interfering with the Z-direction phases that the phase separator introduced.\n\n**The two-step magic:**\n1. Phase separator sets different phases on cut vs. non-cut states\n2. Mixer interferes the phases: cut states constructively interfere, non-cut states destructively interfere\n\n**Optimal parameters for 2-node Max-Cut:**\n* γ = π/2 ≈ 1.57\n* β = π/2 ≈ 1.57\n\nAt these values, P(max cut) = 100%.\n\n**Why not just try all possibilities?** For n qubits there are 2^n bit-strings. Classical brute force takes O(2^n) — for n=50 that's 10^15 trials. QAOA runs one circuit per evaluation, and the number of evaluations grows much more slowly with problem size.",
-                hint: "Try γ ≈ 1.57 (π/2) and β ≈ 1.57 (π/2). Or click 'Run Optimizer' to let gradient ascent find the maximum.",
+                lesson: "**The mixer** drives transitions between bit-strings, converting phase differences into amplitude differences.\n\nThe standard QAOA mixer is:\nU_B(β) = exp(−iβ Σ_i X_i) = ⊗_i RX(2β)\n\nWe apply RX(β) independently on each qubit. RX works because it rotates around the X-axis, interfering with the Z-direction phases that the phase separator introduced.\n\n**The two-step magic:**\n1. Phase separator sets different phases on cut vs. non-cut states\n2. Mixer interferes the phases: cut states constructively interfere, non-cut states destructively interfere\n\n**Optimal parameters for 2-node Max-Cut:**\n* γ = π/2 ≈ 1.57\n* β = 3π/4 ≈ 2.36\n\nAt these values, P(max cut) = 100%.\n\n**Why not just try all possibilities?** For n qubits there are 2^n bit-strings. Classical brute force takes O(2^n) — for n=50 that's 10^15 trials. QAOA runs one circuit per evaluation, and the number of evaluations grows much more slowly with problem size.",
+                hint: "Try γ ≈ 1.57 (π/2) and β ≈ 2.36 (3π/4). Or click 'Run Optimizer' to let gradient ascent find the maximum.",
             },
             {
                 name: "14.4: QAOA on a Triangle",
@@ -985,8 +985,8 @@ export const STAGES = [
                 variational: {
                     numQubits: 3,
                     params: [
-                        { id: 'gamma', label: 'γ (phase)', min: 0, max: 3.14159, init: 0.3 },
-                        { id: 'beta',  label: 'β (mixer)', min: 0, max: 1.5708,  init: 0.3 }
+                        { id: 'gamma', label: 'γ (phase)', min: 0, max: 3.14159, init: 1.32 },
+                        { id: 'beta',  label: 'β (mixer)', min: 0, max: 3.14159, init: 1.32 }
                     ],
                     template: [
                         ['H0','H1','H2'],
@@ -1003,12 +1003,12 @@ export const STAGES = [
                     ],
                     winMode: 'prob',
                     targetBits: [1, 2, 3, 4, 5, 6],
-                    probThreshold: 0.75,
+                    probThreshold: 0.95,
                     showLandscape: false,
                     show3DSurface: true,
                     showOptimizer: true,
                     costLabel: 'P(cut≥2)',
-                    task: "A triangle graph has 3 nodes and 3 edges (0-1, 1-2, 0-2). The max cut = 2 (any partition with one node alone cuts 2 edges). The valid configurations are all 6 states except |000⟩ and |111⟩. Tune γ and β to get P(valid cut) > 75%.",
+                    task: "A triangle graph has 3 nodes and 3 edges (0-1, 1-2, 0-2). The max cut = 2 (any partition with one node alone cuts 2 edges). You start at the lowest point — use the optimizer to climb to P(valid cut) > 95%.",
                 },
                 lesson: "**QAOA on the triangle** shows why quantum optimization is interesting: the problem is hard to solve optimally, but QAOA finds a near-optimal solution efficiently.\n\nFor a triangle graph, every assignment except |000⟩ and |111⟩ cuts exactly 2 edges. Classical random guessing gives P(max cut) = 6/8 = 75%. QAOA p=1 can do slightly better.\n\n**The full p=1 QAOA circuit:**\n* **Init:** H on all 3 qubits\n* **Phase separator:** Apply CX·RZ(γ)·CX for each edge (01, 12, 02)\n* **Mixer:** RX(β) on all 3 qubits\n\nAll three edges use the same γ parameter — this is the p=1 approximation. Higher p (more layers) allows different angles per layer and achieves better approximations.\n\n**VQE vs. QAOA:**\n* VQE finds a quantum ground state (energy minimization)\n* QAOA finds the optimal bit-string (combinatorial optimization)\n* Both use the same hybrid loop: quantum circuit + classical optimizer\n\n**The QAOA guarantee:** for p → ∞, QAOA finds the exact optimal solution. For finite p, it provides an approximation ratio that improves with depth.",
                 hint: "Click 'Run Optimizer' for the best results. Manually, try γ ≈ 0.39 and β ≈ 0.19 (the theoretical optimum for p=1 triangle Max-Cut).",
