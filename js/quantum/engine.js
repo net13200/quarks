@@ -170,6 +170,10 @@ function _resolveParamGate(spec, paramValues, numQubits) {
         const cv = Math.cos(theta / 2), sv = Math.sin(theta / 2);
         return _buildSingleQubitNGate([[{r:cv,i:0},{r:-sv,i:0}],[{r:sv,i:0},{r:cv,i:0}]], spec.qubit, numQubits);
     }
+    if (spec.gate === 'RX') {
+        const cv = Math.cos(theta / 2), sv = Math.sin(theta / 2);
+        return _buildSingleQubitNGate([[{r:cv,i:0},{r:0,i:-sv}],[{r:0,i:-sv},{r:cv,i:0}]], spec.qubit, numQubits);
+    }
     if (spec.gate === 'RZ') {
         return _buildSingleQubitNGate([[{r:1,i:0},{r:0,i:0}],[{r:0,i:0},{r:Math.cos(theta),i:Math.sin(theta)}]], spec.qubit, numQubits);
     }

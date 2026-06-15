@@ -1104,6 +1104,19 @@ details[open] .learn-ach-summary::before { transform: rotate(90deg); }
     width: 100%;
     max-width: 280px;
 }
+#var-surface-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+#var-surface-canvas {
+    background: #060d1a;
+    border: 1px solid #334155;
+    border-radius: 8px;
+    width: 100%;
+    max-width: 280px;
+    display: block;
+}
 .var-optimizer-btn {
     display: inline-flex;
     align-items: center;

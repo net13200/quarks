@@ -1240,6 +1240,102 @@ window.selectQftInput    = n => selectQftInput(n, state, renderBoard);
 
 // ── Variational Mode ──────────────────────────────────────────────────────
 let _varOptimizerTimer = null;
+let _surfaceGrid = null;      // cached cost grid for 3D surface plot
+const _SN = 18;               // grid resolution (18×18 quads)
+const _SSU = 7, _SSV = 3.5, _SSZ = 50, _SSBY = 60; // projection constants
+
+function _buildSurfaceGrid(vspec) {
+    const p0 = vspec.params[0], p1 = vspec.params[1];
+    const grid = [];
+    let cMin = Infinity, cMax = -Infinity;
+    for (let i = 0; i <= _SN; i++) {
+        grid[i] = [];
+        for (let j = 0; j <= _SN; j++) {
+            const params = Object.fromEntries(vspec.params.map(p => [p.id, state.variationalParams[p.id] ?? p.init]));
+            params[p0.id] = p0.min + (p0.max - p0.min) * i / _SN;
+            params[p1.id] = p1.min + (p1.max - p1.min) * j / _SN;
+            const c = _computeVariationalCost(vspec, params);
+            grid[i][j] = c;
+            if (c < cMin) cMin = c;
+            if (c > cMax) cMax = c;
+        }
+    }
+    grid.cMin = cMin;
+    grid.cMax = cMax > cMin ? cMax : cMin + 1;
+    _surfaceGrid = grid;
+}
+
+function _draw3DSurface(vspec) {
+    const canvas = document.getElementById('var-surface-canvas');
+    if (!canvas || !_surfaceGrid) return;
+    const ctx = canvas.getContext('2d');
+    const W = canvas.width, H = canvas.height;
+    ctx.clearRect(0, 0, W, H);
+
+    const p0 = vspec.params[0], p1 = vspec.params[1];
+    const { cMin, cMax } = _surfaceGrid;
+    const range = cMax - cMin;
+    const norm = c => (c - cMin) / range;
+
+    const bx = W / 2, by = _SSBY;
+    const proj = (u, v, c) => ({
+        x: bx + (u - v) * _SSU,
+        y: by + (u + v) * _SSV - norm(c) * _SSZ,
+    });
+    const surfaceColor = c => {
+        const t = norm(c);
+        return `hsl(${Math.round((1 - t) * 240)},80%,${Math.round(30 + t * 22)}%)`;
+    };
+
+    // Draw surface: painter's algorithm (small u+v first = far from viewer)
+    for (let sum = 0; sum <= 2 * (_SN - 1); sum++) {
+        for (let ui = Math.max(0, sum - (_SN - 1)); ui <= Math.min(_SN - 1, sum); ui++) {
+            const vi = sum - ui;
+            const c00 = _surfaceGrid[ui][vi], c10 = _surfaceGrid[ui+1][vi];
+            const c11 = _surfaceGrid[ui+1][vi+1], c01 = _surfaceGrid[ui][vi+1];
+            const p00 = proj(ui,vi,c00), p10 = proj(ui+1,vi,c10);
+            const p11 = proj(ui+1,vi+1,c11), p01 = proj(ui,vi+1,c01);
+            ctx.beginPath();
+            ctx.moveTo(p00.x,p00.y); ctx.lineTo(p10.x,p10.y);
+            ctx.lineTo(p11.x,p11.y); ctx.lineTo(p01.x,p01.y);
+            ctx.closePath();
+            ctx.fillStyle = surfaceColor((c00+c10+c11+c01)/4);
+            ctx.fill();
+            ctx.strokeStyle = 'rgba(0,0,0,0.18)';
+            ctx.lineWidth = 0.5;
+            ctx.stroke();
+        }
+    }
+
+    // Axis edge lines
+    ctx.strokeStyle = 'rgba(255,255,255,0.22)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    for (let i = 0; i <= _SN; i++) { const p = proj(i,0,cMin); i===0 ? ctx.moveTo(p.x,p.y) : ctx.lineTo(p.x,p.y); }
+    ctx.stroke();
+    ctx.beginPath();
+    for (let j = 0; j <= _SN; j++) { const p = proj(0,j,cMin); j===0 ? ctx.moveTo(p.x,p.y) : ctx.lineTo(p.x,p.y); }
+    ctx.stroke();
+
+    // Axis labels
+    ctx.font = '11px sans-serif'; ctx.fillStyle = 'rgba(255,255,255,0.55)'; ctx.textAlign = 'center';
+    const pA = proj(_SN, 0, cMin); ctx.fillText(p0.label || 'γ', pA.x + 14, pA.y + 4);
+    const pB = proj(0, _SN, cMin); ctx.fillText(p1.label || 'β', pB.x - 14, pB.y + 4);
+
+    // Current position
+    const curU = Math.min(_SN, Math.max(0, ((state.variationalParams[p0.id] ?? p0.init) - p0.min) / (p0.max - p0.min) * _SN));
+    const curV = Math.min(_SN, Math.max(0, ((state.variationalParams[p1.id] ?? p1.init) - p1.min) / (p1.max - p1.min) * _SN));
+    const curC = _computeVariationalCost(vspec, state.variationalParams);
+    const curBase = proj(curU, curV, cMin);
+    const curPt   = proj(curU, curV, curC);
+    ctx.beginPath(); ctx.moveTo(curBase.x,curBase.y); ctx.lineTo(curPt.x,curPt.y);
+    ctx.strokeStyle = 'rgba(255,255,255,0.55)'; ctx.lineWidth = 1.5; ctx.stroke();
+    ctx.beginPath(); ctx.arc(curBase.x,curBase.y,2.5,0,2*Math.PI);
+    ctx.fillStyle='rgba(255,255,255,0.35)'; ctx.fill();
+    ctx.beginPath(); ctx.arc(curPt.x,curPt.y,5.5,0,2*Math.PI);
+    ctx.fillStyle='#fff'; ctx.fill();
+    ctx.strokeStyle='#0f172a'; ctx.lineWidth=1.5; ctx.stroke();
+}
 
 function initVariationalMode(vspec) {
     // Hide palette — circuit board stays visible (read-only)
@@ -1300,6 +1396,18 @@ function initVariationalMode(vspec) {
         landscapeWrap.classList.remove('hidden');
     } else {
         landscapeWrap.classList.add('hidden');
+    }
+
+    // 3D Surface
+    _surfaceGrid = null;
+    const surfaceWrap = document.getElementById('var-surface-wrap');
+    if (vspec.show3DSurface && vspec.params.length >= 2) {
+        surfaceWrap.classList.remove('hidden');
+        const lbl = document.getElementById('var-surface-label');
+        if (lbl) lbl.textContent = (vspec.costLabel || 'Cost') + ' Landscape';
+        _buildSurfaceGrid(vspec);
+    } else {
+        surfaceWrap.classList.add('hidden');
     }
 
     // Optimizer button
@@ -1371,6 +1479,7 @@ function recomputeVariational(checkWin = true) {
     }
 
     if (vspec.showLandscape) _drawLandscape(vspec);
+    if (vspec.show3DSurface && _surfaceGrid) _draw3DSurface(vspec);
 
     if (checkWin) {
         const won = _checkVariationalWin(vspec, cost);
