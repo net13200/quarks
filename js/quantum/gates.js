@@ -157,8 +157,26 @@ export function generateMatrices(N) {
             GATE_MATRICES['CCX102'] = CCX012;
             GATE_MATRICES['CCX201'] = CCX021;
             GATE_MATRICES['CCX210'] = CCX120;
+        } else if (N === 4) {
+            // Generate all CX(ctrl→targ) gates for 4 qubits
+            for (let ctrl = 0; ctrl < 4; ctrl++) {
+                for (let targ = 0; targ < 4; targ++) {
+                    if (ctrl === targ) continue;
+                    const mat = Array(16).fill(null).map(() => Array(16).fill({r:0,i:0}));
+                    for (let i = 0; i < 16; i++) {
+                        const ctrlBit = (i >> (3 - ctrl)) & 1;
+                        if (ctrlBit === 0) {
+                            mat[i][i] = {r:1,i:0};
+                        } else {
+                            const j = i ^ (1 << (3 - targ));
+                            mat[i][j] = {r:1,i:0};
+                        }
+                    }
+                    GATE_MATRICES[`CX${ctrl}${targ}`] = mat;
+                }
+            }
         }
-        
+
         for (let ctrl = 0; ctrl < N; ctrl++) {
             for (let targ = 0; targ < N; targ++) {
                 if (ctrl === targ) continue;

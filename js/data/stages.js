@@ -1011,7 +1011,72 @@ export const STAGES = [
                     task: "A triangle graph has 3 nodes and 3 edges (0-1, 1-2, 0-2). The max cut = 2 (any partition with one node alone cuts 2 edges). You start at the lowest point — use the optimizer to climb to P(valid cut) > 95%.",
                 },
                 lesson: "**QAOA on the triangle** shows why quantum optimization is interesting: the problem is hard to solve optimally, but QAOA finds a near-optimal solution efficiently.\n\nFor a triangle graph, every assignment except |000⟩ and |111⟩ cuts exactly 2 edges. Classical random guessing gives P(max cut) = 6/8 = 75%. QAOA p=1 can do slightly better.\n\n**The full p=1 QAOA circuit:**\n* **Init:** H on all 3 qubits\n* **Phase separator:** Apply CX·RZ(γ)·CX for each edge (01, 12, 02)\n* **Mixer:** RX(β) on all 3 qubits\n\nAll three edges use the same γ parameter — this is the p=1 approximation. Higher p (more layers) allows different angles per layer and achieves better approximations.\n\n**VQE vs. QAOA:**\n* VQE finds a quantum ground state (energy minimization)\n* QAOA finds the optimal bit-string (combinatorial optimization)\n* Both use the same hybrid loop: quantum circuit + classical optimizer\n\n**The QAOA guarantee:** for p → ∞, QAOA finds the exact optimal solution. For finite p, it provides an approximation ratio that improves with depth.",
-                hint: "Click 'Run Optimizer' for the best results. Manually, try γ ≈ 0.39 and β ≈ 0.19 (the theoretical optimum for p=1 triangle Max-Cut).",
+                hint: "Click 'Run Optimizer' and watch where it converges. The landscape shows the best γ and β for this graph.",
+            },
+            {
+                name: "14.5: QAOA p=1 — The Ceiling",
+                quizDesc: "Discover the fundamental limit of single-layer QAOA on the 4-node cycle graph.",
+                variational: {
+                    numQubits: 4,
+                    params: [
+                        { id: 'gamma', label: 'γ (phase)', min: 0, max: 3.14159, init: 1.0 },
+                        { id: 'beta',  label: 'β (mixer)', min: 0, max: 3.14159, init: 2.0 }
+                    ],
+                    template: [
+                        ['H0','H1','H2','H3'],
+                        ['CX01'],[{gate:'RZ',qubit:1,param:'gamma'}],['CX01'],
+                        ['CX12'],[{gate:'RZ',qubit:2,param:'gamma'}],['CX12'],
+                        ['CX23'],[{gate:'RZ',qubit:3,param:'gamma'}],['CX23'],
+                        ['CX30'],[{gate:'RZ',qubit:0,param:'gamma'}],['CX30'],
+                        [{gate:'RX',qubit:0,param:'beta'},{gate:'RX',qubit:1,param:'beta'},{gate:'RX',qubit:2,param:'beta'},{gate:'RX',qubit:3,param:'beta'}]
+                    ],
+                    winMode: 'prob',
+                    targetBits: [5, 10],
+                    probThreshold: 0.5,
+                    show3DSurface: true,
+                    showOptimizer: true,
+                    costLabel: 'P(cut)',
+                    optimizerInterval: 150,
+                    task: "4-node cycle: nodes 0-1-2-3-0. The max cut (4 edges) is |0101⟩ + |1010⟩. Run the optimizer — notice how P(cut) plateaus even at the best parameters. This is the p=1 ceiling. The next level breaks through it.",
+                },
+                lesson: "**Why does p=1 QAOA hit a ceiling?**\n\nFor the 4-node cycle graph, the 16 computational states divide into 3 groups:\n* |0000⟩, |1111⟩ — 0 cut edges, phase 1\n* 12 states with 2 cut edges — phase e^{2iγ}\n* |0101⟩, |1010⟩ — 4 cut edges (max cut!), phase e^{4iγ}\n\nA single mixer RX(β) must simultaneously amplify the 2 max-cut states while suppressing the 12 intermediate states. These two goals partially conflict — the best single layer can only push P(max cut) to about 55%.\n\n**The landscape confirms this:** the 3D surface has a clear ceiling. No matter where you move on the (γ, β) plane, P(cut) stays below ~55%.\n\n**Adding a second layer** gives the algorithm a second chance to refine. The second phase separator re-encodes the problem at a finer resolution, and the second mixer extracts the result with greater precision.",
+                hint: "Run the optimizer and note the plateau. The landscape shows the p=1 maximum — try moving γ and β anywhere and confirm you can't escape it.",
+            },
+            {
+                name: "14.6: QAOA p=2 — Two Layers",
+                quizDesc: "Use a two-layer QAOA circuit to break through the p=1 ceiling on the 4-node cycle.",
+                variational: {
+                    numQubits: 4,
+                    params: [
+                        { id: 'gamma1', label: 'γ₁ (phase 1)', min: 0, max: 3.14159, init: 0.8 },
+                        { id: 'beta1',  label: 'β₁ (mixer 1)', min: 0, max: 3.14159, init: 2.2 },
+                        { id: 'gamma2', label: 'γ₂ (phase 2)', min: 0, max: 3.14159, init: 0.4 },
+                        { id: 'beta2',  label: 'β₂ (mixer 2)', min: 0, max: 3.14159, init: 2.5 }
+                    ],
+                    template: [
+                        ['H0','H1','H2','H3'],
+                        ['CX01'],[{gate:'RZ',qubit:1,param:'gamma1'}],['CX01'],
+                        ['CX12'],[{gate:'RZ',qubit:2,param:'gamma1'}],['CX12'],
+                        ['CX23'],[{gate:'RZ',qubit:3,param:'gamma1'}],['CX23'],
+                        ['CX30'],[{gate:'RZ',qubit:0,param:'gamma1'}],['CX30'],
+                        [{gate:'RX',qubit:0,param:'beta1'},{gate:'RX',qubit:1,param:'beta1'},{gate:'RX',qubit:2,param:'beta1'},{gate:'RX',qubit:3,param:'beta1'}],
+                        ['CX01'],[{gate:'RZ',qubit:1,param:'gamma2'}],['CX01'],
+                        ['CX12'],[{gate:'RZ',qubit:2,param:'gamma2'}],['CX12'],
+                        ['CX23'],[{gate:'RZ',qubit:3,param:'gamma2'}],['CX23'],
+                        ['CX30'],[{gate:'RZ',qubit:0,param:'gamma2'}],['CX30'],
+                        [{gate:'RX',qubit:0,param:'beta2'},{gate:'RX',qubit:1,param:'beta2'},{gate:'RX',qubit:2,param:'beta2'},{gate:'RX',qubit:3,param:'beta2'}]
+                    ],
+                    winMode: 'prob',
+                    targetBits: [5, 10],
+                    probThreshold: 0.85,
+                    show3DSurface: false,
+                    showOptimizer: true,
+                    costLabel: 'P(cut)',
+                    optimizerInterval: 200,
+                    task: "Same 4-node cycle, but with two QAOA layers. The optimizer has 4 parameters (γ₁, β₁, γ₂, β₂). Run it and watch P(cut) climb past the p=1 ceiling of ~55% — all the way to 85%+.",
+                },
+                lesson: "**QAOA p=2** uses two alternating phase+mixer layers, each with its own parameters.\n\n**Why does a second layer help?** After the first mixer, the state has some structure — the max-cut states have higher amplitude than average, but so do many near-optimal states. The second phase separator sees this *partially-optimized* state and re-weights it more sharply. The second mixer then extracts the result with higher fidelity.\n\nMathematically: p=1 can only create interference patterns of depth 1 in the graph's neighborhood structure. p=2 reaches 2-hop neighborhoods — it 'sees' more of the graph's topology.\n\n**The QAOA theorem:** For any Max-Cut instance, there exist parameters (γ₁,...,γₚ, β₁,...,βₚ) such that as p→∞, QAOA achieves the exact optimal solution. The p=2 result on C4 is a concrete demonstration of this convergence.\n\n**Near-term quantum computing:** On real hardware, deeper circuits accumulate more noise. QAOA at small p is attractive precisely because it stays shallow while still providing a quantum advantage over classical methods on certain problem families.",
+                hint: "Click 'Run Optimizer' — with 4 parameters the search space is larger, but gradient ascent finds a strong solution. Watch P(cut) surpass 85%.",
             },
         ]
     },
