@@ -1660,11 +1660,19 @@ window.runVariationalOptimizer = function() {
 // ── Auth UI ───────────────────────────────────────────────────────────────
 let _authMode = 'signin'; // 'signin' | 'signup'
 
+let _isGuest = false;
+
 function _showApp(email) {
     _isSignedIn = true;
     document.getElementById('login-screen').classList.add('hidden');
     document.getElementById('main-menu').classList.remove('hidden');
     document.getElementById('auth-email-display').textContent = email;
+    _updateAuthStatusBar();
+}
+
+function _updateAuthStatusBar() {
+    document.querySelectorAll('.auth-signed-in-only').forEach(el => el.classList.toggle('hidden', _isGuest));
+    document.querySelectorAll('.auth-guest-only').forEach(el => el.classList.toggle('hidden', !_isGuest));
 }
 
 function _showLoginScreen() {
@@ -1735,8 +1743,22 @@ window.handleAuthSubmit = async function() {
 
 window.handleSignOut = async function() {
     _isSignedIn = false;
+    _isGuest = false;
     await signOut();
     _showLoginScreen();
+};
+
+window.handleGuestEntry = function() {
+    _isGuest = true;
+    _showApp('Guest');
+};
+
+window.handleGuestSignUp = function() {
+    _isGuest = false;
+    _isSignedIn = false;
+    _authMode = 'signin';
+    _showLoginScreen();
+    window.toggleAuthMode();
 };
 
 // ── Feedback ──────────────────────────────────────────────────────────────

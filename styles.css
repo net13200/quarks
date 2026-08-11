@@ -263,6 +263,11 @@ body:has(#menu-home:not(.hidden)) {
 .auth-toggle-btn { background: none; border: none; color: #64748b; font-size: 0.85rem; cursor: pointer; text-align: center; text-decoration: underline; }
 .auth-toggle-btn:hover { color: #94a3b8; }
 .auth-error { font-size: 0.85rem; text-align: center; }
+.auth-divider { display: flex; align-items: center; gap: 12px; margin: 4px 0; }
+.auth-divider::before, .auth-divider::after { content: ''; flex: 1; height: 1px; background: #334155; }
+.auth-divider span { font-size: 0.8rem; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; }
+.auth-guest-btn { background: transparent; border: 1px solid #334155; color: #94a3b8; font-size: 0.95rem; padding: 11px 12px; border-radius: 8px; width: 100%; cursor: pointer; transition: background 0.15s, border-color 0.15s, color 0.15s; }
+.auth-guest-btn:hover { background: rgba(148,163,184,0.08); border-color: #475569; color: #cbd5e1; }
 
 /* ── Auth status bar on home screen ────────────────────────────── */
 #auth-status-bar { margin-top: 18px; display: flex; align-items: center; justify-content: center; gap: 10px; }
